@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
+import time
 from scipy.ndimage import sobel
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-import time
+from skimage.feature import local_binary_pattern, hog
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -27,14 +28,7 @@ def load_famous48_file(file_path):
             labels.append(label)
     return np.array(data), np.array(labels)
 
-# Load all 3 parts
-X1, y1 = load_famous48_file("famous48/x24x24.txt")
-X2, y2 = load_famous48_file("famous48/y24x24.txt")
-X3, y3 = load_famous48_file("famous48/z24x24.txt")
-X = np.vstack([X1, X2, X3])
-y = np.concatenate([y1, y2, y3])
-
-# === Compute Gradient Angles ===
+# === Feature Engineering ===
 def compute_gradient_angles(X_flat):
     angle_features = []
     for row in X_flat:
@@ -45,25 +39,23 @@ def compute_gradient_angles(X_flat):
         angle_features.append(angle)
     return np.array(angle_features)
 
-X_angles = compute_gradient_angles(X)
-X_augmented = np.hstack([X, X_angles])
+def extract_lbp_features(X_flat, radius=1, n_points=8):
+    lbp_features = []
+    for row in X_flat:
+        img = row.reshape(24, 24)
+        lbp = local_binary_pattern(img, P=n_points, R=radius, method='uniform')
+        hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), density=True)
+        lbp_features.append(hist)
+    return np.array(lbp_features)
 
-# === Standardize + Split ===
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X_augmented)
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, stratify=y, random_state=42)
-
-# === Evaluate Decision Tree and Random Forest ===
-def evaluate_sklearn_models(X_train, X_test, y_train, y_test):
-    models = {
-        "Decision Tree": DecisionTreeClassifier(max_depth=30, min_samples_leaf=2, random_state=42),
-        "Random Forest": RandomForestClassifier(n_estimators=200, max_depth=50, max_features='sqrt', random_state=42)
-    }
-    for name, model in models.items():
-        start = time.time()
-        model.fit(X_train, y_train)
-        acc = accuracy_score(y_test, model.predict(X_test))
-        print(f"{name}: Accuracy = {acc:.4f}, Time = {time.time() - start:.2f}s")
+def extract_hog_features(X_flat):
+    hog_feats = []
+    for row in X_flat:
+        img = row.reshape(24, 24)
+        feat = hog(img, orientations=9, pixels_per_cell=(6, 6),
+                   cells_per_block=(2, 2), block_norm='L2-Hys', feature_vector=True)
+        hog_feats.append(feat)
+    return np.array(hog_feats)
 
 # === PyTorch NN ===
 class SimpleNN(nn.Module):
@@ -76,7 +68,6 @@ class SimpleNN(nn.Module):
             nn.ReLU(),
             nn.Linear(128, num_classes)
         )
-
     def forward(self, x):
         return self.net(x)
 
@@ -90,7 +81,7 @@ def evaluate_pytorch_model(X_train, X_test, y_train, y_test, epochs=30, batch_si
     train_dataset = torch.utils.data.TensorDataset(X_train_tensor, y_train_tensor)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    model = SimpleNN(X_train.shape[1], len(np.unique(y))).to(device)
+    model = SimpleNN(X_train.shape[1], len(np.unique(y_train))).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -109,8 +100,52 @@ def evaluate_pytorch_model(X_train, X_test, y_train, y_test, epochs=30, batch_si
     with torch.no_grad():
         preds = model(X_test_tensor.to(device)).argmax(dim=1).cpu().numpy()
         acc = accuracy_score(y_test, preds)
-        print(f"Neural Network (PyTorch): Accuracy = {acc:.4f}, Time = {time.time() - start:.2f}s")
+    print(f"Neural Network (PyTorch): Accuracy = {acc:.4f}, Time = {time.time() - start:.2f}s")
 
-# === Run All ===
-evaluate_sklearn_models(X_train, X_test, y_train, y_test)
-evaluate_pytorch_model(X_train, X_test, y_train, y_test)
+# === Main Pipeline ===
+def main():
+    # Load all 3 files (update paths if needed)
+    X1, y1 = load_famous48_file("famous48/x24x24.txt")
+    X2, y2 = load_famous48_file("famous48/y24x24.txt")
+    X3, y3 = load_famous48_file("famous48/z24x24.txt")
+    X = np.vstack([X1, X2, X3])
+    y = np.concatenate([y1, y2, y3])
+
+    print("Extracting features...")
+    X_angles = compute_gradient_angles(X)
+    X_lbp = extract_lbp_features(X)
+    X_hog = extract_hog_features(X)
+
+    # Combine all features
+    X_all = np.hstack([X, X_angles, X_lbp, X_hog])
+    print("Feature shape:", X_all.shape)
+
+    # Standardize
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_all)
+
+    # Split
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, stratify=y, random_state=42)
+
+    # Decision Tree
+    print("\nTraining Decision Tree...")
+    start = time.time()
+    dt = DecisionTreeClassifier(max_depth=30, min_samples_leaf=2, random_state=42)
+    dt.fit(X_train, y_train)
+    acc_dt = accuracy_score(y_test, dt.predict(X_test))
+    print(f"Decision Tree: Accuracy = {acc_dt:.4f}, Time = {time.time() - start:.2f}s")
+
+    # Random Forest
+    print("\nTraining Random Forest...")
+    start = time.time()
+    rf = RandomForestClassifier(n_estimators=200, max_depth=50, max_features='sqrt', random_state=42)
+    rf.fit(X_train, y_train)
+    acc_rf = accuracy_score(y_test, rf.predict(X_test))
+    print(f"Random Forest: Accuracy = {acc_rf:.4f}, Time = {time.time() - start:.2f}s")
+
+    # PyTorch Neural Net
+    print("\nTraining Neural Network...")
+    evaluate_pytorch_model(X_train, X_test, y_train, y_test)
+
+if __name__ == "__main__":
+    main()
