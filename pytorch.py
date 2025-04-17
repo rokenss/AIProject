@@ -4,7 +4,6 @@ import time
 from scipy.ndimage import sobel
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from skimage.feature import local_binary_pattern, hog
@@ -126,14 +125,6 @@ def main():
 
     # Split
     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, stratify=y, random_state=42)
-
-    # Decision Tree
-    print("\nTraining Decision Tree...")
-    start = time.time()
-    dt = DecisionTreeClassifier(max_depth=30, min_samples_leaf=2, random_state=42)
-    dt.fit(X_train, y_train)
-    acc_dt = accuracy_score(y_test, dt.predict(X_test))
-    print(f"Decision Tree: Accuracy = {acc_dt:.4f}, Time = {time.time() - start:.2f}s")
 
     # Random Forest
     print("\nTraining Random Forest...")
