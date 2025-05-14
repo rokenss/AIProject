@@ -2,11 +2,11 @@
 
 Comparison of Tree-Based Methods and Neural Networks for Face Detection 
 
-1. Introduction 
+## 1. Introduction 
 
 In this project, we explored and compared different machine learning methods for face detection. The goal was to see how tree-based models like Decision Trees and Random Forests stack up against Neural Networks when working with image-based data. We tested several feature sets and measured each model’s performance based on accuracy and how long it took to train them. For all experiments, we used the famous48 dataset. 
 
-2. Feature Sets  
+## 2. Feature Sets  
 
 Several feature engineering approaches were investigated: 
 
@@ -22,7 +22,7 @@ Several feature engineering approaches were investigated:
 
  
 
-3. Models Evaluated 
+## 3. Models Evaluated 
 
 The following models were trained and evaluated: 
 
@@ -42,9 +42,9 @@ The following models were trained and evaluated:
 
  
 
-4. Results 
+## 4. Results 
 
-	Scikit-learn models: 
+### Scikit-learn models: 
 
 | Feature Set           | Model           | Accuracy | Time   |
 |-----------------------|------------------|----------|--------|
@@ -59,7 +59,7 @@ The following models were trained and evaluated:
 |                       | Neural Network   | 0.6232   | 6.30s  |
 
 
- Models with Extended Features: 
+ ### Models with Extended Features: 
 
  - Feature Set: Raw Pixels + Gradient Angles + LBP + HOG + Haar + LAB features. Feature shape: (6835, 2078). 
  - Random Forest:  
@@ -69,8 +69,8 @@ The following models were trained and evaluated:
   	- The model was trained for 50 epochs. 
 	- Maximum Test Accuracy achieved: 0.8928 (at Epoch 49). 
 
-5. Discussion 
+## 5. Discussion 
 
-	To be continued... 
+To be continued... 
 
  
