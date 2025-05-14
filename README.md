@@ -46,17 +46,19 @@ A custom SimpleNN was built using PyTorch in pytorch.py, featuring linear layers
 
 	Scikit-learn models: 
 
-Feature Set Model Accuracy Time 
-
-Raw pixels Decision Tree 0.2376 9.15s 
-          Random forest 0.6554 26.07s 
-          Neural Network 0.8157 8.21s 
-Handcrafted features Decision Tree 0.1978 0.46s 
-            Random forest 0.4119 4.70s 
-            Neural Network 0.4664 7.39s 
-Combined Features Decision Tree 0.2393 0.79s 
-                  Random forest 0.5255 6.75s 
-                  Neural Network 0.6232 6.30s 
+| Feature   | Set Model     | Accuracy | Time  |
+|-----------|---------------|----------|-------|
+| Raw pixels| Decision Tree | 0.2376   |9.15s  |
+            | Random forest | 0.6554   |26.07s |
+            | Neural Network| 0.8157   | 8.21s |
+|-----------|---------------|----------|-------|	    
+Handcrafted | Decision Tree | 0.1978   | 0.46s |
+ features   | Random forest | 0.4119   | 4.70s |
+            | Neural Network| 0.4664   | 7.39s | 
+|-----------|---------------|----------|-------|
+Combined    | Decision Tree | 0.2393   | 0.79s |
+Features    | Random forest | 0.5255   | 6.75s |
+            | Neural Network| 0.6232   | 6.30s |
 
  Models with Extended Features: 
 
