@@ -43,7 +43,7 @@ The following models were trained and evaluated:
  
 
 ## 4. Results 
-
+### First version
 ### Scikit-learn models: 
 
 | Feature Set           | Model           | Accuracy | Time   |
@@ -59,15 +59,56 @@ The following models were trained and evaluated:
 |                       | Neural Network   | 0.6232   | 6.30s  |
 
 
- ### Models with Extended Features: 
+ ### Models with Extended Features:
+ ### Current version
+ 
+A) Libraries and Dependencies  
 
- - Feature Set: Raw Pixels + Gradient Angles + LBP + HOG + Haar + LAB features. Feature shape: (6835, 2078). 
- - Random Forest:  
-   	- Accuracy = 0.7485 
-   	- Time = 160.09s
-- Neural Network (PyTorch - SimpleNN):  
-  	- The model was trained for 50 epochs. 
-	- Maximum Test Accuracy achieved: 0.8928 (at Epoch 49). 
+ - numpy, scipy: numerical operations and filtering  
+ - scikit-learn: preprocessing, model selection, RandomForestClassifier  
+ - torch (PyTorch): model training and optimisation  
+ - skimage: feature extraction (HOG, LBP)  
+
+B) Data Loading  
+
+Each .txt file contains flattened 24x24 grayscale face images and class labels. The loader function extracts pixels and the a3 class label from each sample.  
+
+C) Feature Extraction  
+
+Each image is represented using the following stacked features:  
+ - Raw Pixels: 576 values  
+ - Gradient Angles (Sobel Filters): 576 values  
+ - LBP (Local Binary Patterns): 10-bin histogram  
+ - HOG (Histogram of Oriented Gradients): shape features  
+ - Haar-like Rectangle Features: region contrast via integral images  
+ - LAB (Local Average Binary): binary patterns from 4x4 patches  
+
+D) Standardisation  
+
+All features are scaled using StandardScaler (mean=0, std=1), which helps improve neural network convergence and balance feature influence.  
+
+E) Data Split  
+
+The data is split into 85% train and 15% test using train_test_split with stratification.  
+
+F) Random Forest Classifier  
+
+Model: sklearn.ensemble.RandomForestClassifier  
+ - n_estimators: 400 (number of trees)  
+ - max_depth: 60 (limits overfitting)  
+ - max_features: sqrt (recommended for classification)  
+ - Trained on full feature set  
+
+G) Results  
+
+Example performance:  
+ - Feature Shape: (6835, 2078)  
+ - Random Forest Accuracy: ~76% Time: 56.79s 
+ - Neural Network Accuracy: up to 89.8% Time: 4.21s 
+
+H) Takeaways  
+ - Raw + classic features (HOG, LBP, LAB) are effective without deep CNNs 
+ 
 
 ## 5. Discussion 
 
