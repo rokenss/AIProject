@@ -12,12 +12,12 @@ This project implements a comprehensive face recognition pipeline using the famo
   - famous48 is a set of example images contained faces of 48 famous persons like sportsmen, politicians, actors or television stars. It was divided into 3 files: x24x24.txt, y24x24.txt, z24x24.txt, each containing 16 personal classes. In total 6835 images. 
   - Each image: 24×24 grayscale → 576 pixels 
   - Features extracted: 
-        -- Raw Pixels 
-        -- Gradient Angles (Sobel filter) 
-        -- LBP (Local Binary Patterns) 
-        -- HOG (Histogram of Oriented Gradients) 
-        -- Haar-like rectangle features (via integral image) 
-        -- LAB (Local Grouped Binary patterns) 
+        - Raw Pixels 
+        - Gradient Angles (Sobel filter) 
+        - LBP (Local Binary Patterns) 
+        - HOG (Histogram of Oriented Gradients) 
+        - Haar-like rectangle features (via integral image) 
+        - LAB (Local Grouped Binary patterns) 
   - Final feature shape: (6835, 2078) 
 
 2. Libraries and Dependencies 
@@ -38,9 +38,9 @@ This project implements a comprehensive face recognition pipeline using the famo
  
   - Input: Extracted features (2078-dimensional) 
   - Architecture: 
-       -- Linear → ReLU → Dropout(0.3) 
-       -- Linear → ReLU → Dropout(0.3) 
-       -- Output → num_classes 
+       - Linear → ReLU → Dropout(0.3) 
+       - Linear → ReLU → Dropout(0.3) 
+       - Output → num_classes 
   - Regularization: Dropout, weight_decay=1e-4 
   - Optimizer: Adam (lr=0.001) 
   - Epochs: 50 
@@ -51,9 +51,9 @@ This project implements a comprehensive face recognition pipeline using the famo
 
   - Input: Raw 24×24 grayscale images 
   - Architecture: 
-      -- Conv2D → BN → ReLU → MaxPool 
-      -- Conv2D → BN → ReLU → MaxPool 
-      -- Flatten → Linear → Dropout → Output 
+      - Conv2D → BN → ReLU → MaxPool 
+      - Conv2D → BN → ReLU → MaxPool 
+      - Flatten → Linear → Dropout → Output 
   - Regularization: Dropout, BatchNorm, weight_decay=1e-4 
   - Optimizer: Adam (lr=0.001) 
   - Epochs: 30 
