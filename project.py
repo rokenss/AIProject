@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 # === Load Data ===
 def load_famous48_file(file_path):
@@ -85,7 +86,7 @@ def extract_lab_features(X_flat):
         features.append(patch_vals)
     return np.array(features)
 
-# === PyTorch Neural Network ===
+# === PyTorch Neural Network (features) ===
 class SimpleNN(nn.Module):
     def __init__(self, input_dim, num_classes):
         super().__init__()
@@ -98,7 +99,6 @@ class SimpleNN(nn.Module):
             nn.Dropout(0.3),
             nn.Linear(128, num_classes)
         )
-
     def forward(self, x):
         return self.net(x)
 
@@ -132,7 +132,59 @@ def evaluate_pytorch_model(X_train, X_test, y_train, y_test, epochs=50, batch_si
             acc = accuracy_score(y_test, preds)
         print(f"Epoch {epoch+1}, Test Accuracy: {acc:.4f}")
 
-# === Main Pipeline ===
+# === CNN on Raw Pixels ===
+class SimpleCNN(nn.Module):
+    def __init__(self, num_classes=48):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(16)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.fc1 = nn.Linear(32 * 6 * 6, 128)
+        self.dropout = nn.Dropout(0.3)
+        self.fc2 = nn.Linear(128, num_classes)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool(F.relu(self.bn2(self.conv2(x))))
+        x = x.view(x.size(0), -1)
+        x = self.dropout(F.relu(self.fc1(x)))
+        return self.fc2(x)
+
+def evaluate_cnn(X_raw, y, epochs=30, batch_size=64):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    X_img = X_raw.reshape(-1, 1, 24, 24)
+    X_train, X_test, y_train, y_test = train_test_split(X_img, y, test_size=0.15, stratify=y, random_state=42)
+
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+    X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.long)
+    y_test_tensor = torch.tensor(y_test, dtype=torch.long)
+
+    train_dataset = torch.utils.data.TensorDataset(X_train_tensor, y_train_tensor)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+    model = SimpleCNN(num_classes=len(np.unique(y))).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+    criterion = nn.CrossEntropyLoss()
+
+    for epoch in range(epochs):
+        model.train()
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+
+        model.eval()
+        with torch.no_grad():
+            preds = model(X_test_tensor.to(device)).argmax(1).cpu().numpy()
+            acc = accuracy_score(y_test, preds)
+        print(f"[CNN] Epoch {epoch+1}, Test Accuracy: {acc:.4f}")
+
+# === Main Function ===
 def main():
     X1, y1 = load_famous48_file("famous48/x24x24.txt")
     X2, y2 = load_famous48_file("famous48/y24x24.txt")
@@ -164,6 +216,9 @@ def main():
 
     print("\nTraining Neural Network...")
     evaluate_pytorch_model(X_train, X_test, y_train, y_test)
+
+    print("\nTraining CNN on raw pixels...")
+    evaluate_cnn(X, y)
 
 if __name__ == "__main__":
     main()
